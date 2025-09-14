@@ -1,0 +1,47 @@
+You are an expert full-stack developer and Replit AI Agent specializing in building secure, scalable payment gateways deployable directly on Replit. Your task is to design, build, and deploy the complete code for a custom semi-automatic payment gateway named "OnionPay" using Replit's environment (e.g., Node.js template with Express, React for frontend, MongoDB Atlas for DB). Use Replit's built-in authentication for admin login (integrate Replit Auth or simple email/password with JWT for demo). The entire project should be created as a single Replit repl, with automatic setup for running, and include a .replit file for easy deployment. Ensure everything is optimized for Replit's free tier—lightweight, no heavy deps.
+Key Requirements:
+Name and Branding: "OnionPay". UI theme: Purple (#6A1B9A primary), white (#FFFFFF background), black (#000000 text). Add a simple CSS-based onion icon logo (e.g., layered circles in purple).
+Deployment on Replit:
+Use Replit's secrets for env vars (e.g., JWT_SECRET, MONGO_URI).
+Admin login via Replit Auth or a simple form—on first run, create a default admin account.
+Full project in one repl: backend (Node/Express), frontend (React/Vite for dashboard and embeddable components), DB (MongoDB via mongoose).
+Include run instructions in README.md: npm install && npm run dev for dev, with auto-port forwarding.
+Integration: Single RESTful API for easy embed in any website/app. Users get an API key after login. Endpoints:
+/api/onionpay/initiate (POST): Pass order/product ID, amount (auto-fetched if provided), description; returns QR URL, payment form HTML/JSON snippet, and embed code.
+/api/onionpay/submit (POST): UTR submission with CAPTCHA.
+/api/onionpay/status/:orderId (GET): Poll for status (pending, paid, failed).
+Webhooks for real-time (e.g., POST to user's callback URL on approval).
+Sample integration: Provide a JS snippet (e.g., fetch to initiate, embed iframe or div for payment page).
+User Roles:
+Admin: Login via Replit-integrated form to dashboard. Upload QR codes (image via Multer, store in Replit's fs or Cloudinary free tier), set UPI IDs, manage products/orders, approve payments, view analytics.
+End-User: On integrating app, sees professional payment page with QR.
+Payment Flow (Semi-Automatic with 5-min Timer):
+Integrating app calls API with product/order details (e.g., {productId: 'abc', callbackUrl: 'https://myapp.com'}); API auto-fetches price from admin's product DB if productId provided, or uses passed amount.
+Displays optimized payment page: Smooth animations (CSS transitions), professional layout (responsive, mobile-first with Tailwind or custom CSS).
+Above QR: Bold text "Payment Pending: Pay ₹[amount] via UPI" (fetched price shown dynamically).
+User scans QR, pays, enters UTR, submits (with 5-min countdown timer via JS setInterval; polls status every 10s).
+Submission notifies admin (Socket.io real-time or email placeholder).
+Admin dashboard: Queue of pending payments with UTR, amount, order details; one-click approve/reject (verifies manually).
+On approve: Instant update to "Paid" via API/webhook; if order/booking, mark "Booked"; if product, "Purchased" and trigger fulfillment (e.g., email receipt).
+Timer expires: Auto "Payment Failed" if no approval.
+Payment Page Specifics:
+Fully optimized: Load <2s, lazy-load QR img, minified JS/CSS.
+Smooth & Professional: Clean card layout (white bg, purple borders/accents), progress spinner on submit, success modal on paid, error toasts (use React-Toastify).
+Dynamic: Amount from product fetch (API queries admin DB by productId); show "Scan QR & Pay Exactly ₹[amount]" overlay on QR.
+Embeddable: As iframe or shadow DOM component for seamless integration.
+Core Features:
+Dashboard (React SPA): Secure routes (JWT guard), QR upload form, product management (add/edit with price), pending approvals table (sortable, search), history/analytics (charts via Recharts: total revenue, success rate), export CSV.
+Security: HTTPS (Replit auto), bcrypt for pw, rate-limit (express-rate-limit), CAPTCHA (reCAPTCHA free), hash UTRs.
+DB Schema (Mongo): Users (admin creds), Products (id, name, price), Orders (id, amount, status, utr, qrUrl), Payments.
+Notifications: Socket.io for real-time dashboard updates; placeholders for email/SMS.
+Other: INR focus, responsive (Bootstrap/Tailwind), error logging (console + file), multi-product support (fetch price auto from integrating app's productId).
+Tech Stack (Replit-Friendly):
+Backend: Node/Express, Mongoose, Multer, Socket.io, JWT (jsonwebtoken), CORS.
+Frontend: React (Vite for fast build), Axios for API calls.
+No heavy installs: Stick to npm defaults + free tiers.
+Real-time: Socket.io-client in frontend.
+Build the full Replit project:
+Folder structure: /server (backend), /client (React), /public (static), README.md with integration sample (HTML/JS embed code).
+Generate all files: package.json (with scripts), server.js, models/, routes/, components/ (e.g., PaymentPage.jsx with timer & dynamic amount).
+Test locally in Replit: Seed DB with sample product (₹500), QR upload, end-to-end flow.
+Output: Zip/export the Replit link or full code tree; include "Run on Replit" button if possible.
