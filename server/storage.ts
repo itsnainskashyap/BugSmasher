@@ -17,6 +17,7 @@ import {
 import { db } from "./db";
 import { eq, desc, and, gte } from "drizzle-orm";
 import { randomUUID } from "crypto";
+import bcrypt from "bcrypt";
 
 export interface IStorage {
   // User operations (required for Replit Auth)
@@ -45,8 +46,9 @@ export interface IStorage {
   
   // API Key operations
   createApiKey(userId: string, name: string): Promise<{ key: string; apiKey: ApiKey }>;
-  validateApiKey(keyHash: string): Promise<ApiKey | undefined>;
+  validateApiKey(plainTextKey: string): Promise<ApiKey | undefined>;
   getUserApiKeys(userId: string): Promise<ApiKey[]>;
+  deactivateApiKey(id: string, userId: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -169,7 +171,8 @@ export class DatabaseStorage implements IStorage {
   // API Key operations
   async createApiKey(userId: string, name: string): Promise<{ key: string; apiKey: ApiKey }> {
     const key = `onp_live_${randomUUID().replace(/-/g, '')}`;
-    const keyHash = Buffer.from(key).toString('base64');
+    const saltRounds = 12;
+    const keyHash = await bcrypt.hash(key, saltRounds);
     
     const [apiKey] = await db.insert(apiKeys).values({
       userId,
@@ -180,24 +183,37 @@ export class DatabaseStorage implements IStorage {
     return { key, apiKey };
   }
 
-  async validateApiKey(keyHash: string): Promise<ApiKey | undefined> {
-    const [apiKey] = await db.select().from(apiKeys)
-      .where(and(eq(apiKeys.keyHash, keyHash), eq(apiKeys.isActive, true)));
+  async validateApiKey(plainTextKey: string): Promise<ApiKey | undefined> {
+    // Get all active API keys for comparison
+    const activeApiKeys = await db.select().from(apiKeys)
+      .where(eq(apiKeys.isActive, true));
     
-    if (apiKey) {
-      // Update last used timestamp
-      await db.update(apiKeys)
-        .set({ lastUsedAt: new Date() })
-        .where(eq(apiKeys.id, apiKey.id));
+    // Check each key using bcrypt comparison
+    for (const apiKey of activeApiKeys) {
+      const isValid = await bcrypt.compare(plainTextKey, apiKey.keyHash);
+      if (isValid) {
+        // Update last used timestamp
+        await db.update(apiKeys)
+          .set({ lastUsedAt: new Date() })
+          .where(eq(apiKeys.id, apiKey.id));
+        
+        return apiKey;
+      }
     }
     
-    return apiKey;
+    return undefined;
   }
 
   async getUserApiKeys(userId: string): Promise<ApiKey[]> {
     return await db.select().from(apiKeys)
       .where(and(eq(apiKeys.userId, userId), eq(apiKeys.isActive, true)))
       .orderBy(desc(apiKeys.createdAt));
+  }
+
+  async deactivateApiKey(id: string, userId: string): Promise<void> {
+    await db.update(apiKeys)
+      .set({ isActive: false })
+      .where(and(eq(apiKeys.id, id), eq(apiKeys.userId, userId)));
   }
 }
 

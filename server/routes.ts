@@ -56,8 +56,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
 
     const key = authHeader.substring(7);
-    const keyHash = Buffer.from(key).toString('base64');
-    const apiKey = await storage.validateApiKey(keyHash);
+    const apiKey = await storage.validateApiKey(key);
     
     if (!apiKey) {
       return res.status(401).json({ message: 'Invalid API key' });
@@ -145,6 +144,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error("Error creating QR code:", error);
       res.status(400).json({ message: error.message || "Failed to create QR code" });
+    }
+  });
+
+  // API Key management routes (authenticated)
+  app.get('/api/api-keys', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const apiKeys = await storage.getUserApiKeys(userId);
+      res.json(apiKeys);
+    } catch (error) {
+      console.error("Error fetching API keys:", error);
+      res.status(500).json({ message: "Failed to fetch API keys" });
+    }
+  });
+
+  app.post('/api/api-keys', isAuthenticated, async (req: any, res) => {
+    try {
+      const schema = z.object({
+        name: z.string().min(1).max(100),
+      });
+      
+      const { name } = schema.parse(req.body);
+      const userId = req.user.claims.sub;
+      const result = await storage.createApiKey(userId, name);
+      
+      res.json(result);
+    } catch (error: any) {
+      console.error("Error creating API key:", error);
+      res.status(400).json({ message: error.message || "Failed to create API key" });
+    }
+  });
+
+  app.delete('/api/api-keys/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const userId = req.user.claims.sub;
+      await storage.deactivateApiKey(id, userId);
+      res.json({ message: "API key deactivated successfully" });
+    } catch (error) {
+      console.error("Error deactivating API key:", error);
+      res.status(500).json({ message: "Failed to deactivate API key" });
     }
   });
 

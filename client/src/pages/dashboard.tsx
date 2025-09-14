@@ -11,6 +11,7 @@ import PendingPayments from "@/components/pending-payments";
 import ProductManagement from "@/components/product-management";
 import QrManagement from "@/components/qr-management";
 import Analytics from "@/components/analytics";
+import ApiKeyManagement from "@/components/api-key-management";
 import useWebSocket from "@/hooks/useWebSocket";
 import { Bell, LogOut, TrendingUp, Clock, CheckCircle, Package } from "lucide-react";
 
@@ -172,10 +173,11 @@ export default function Dashboard() {
 
         {/* Tabs */}
         <Tabs defaultValue="pending" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="pending" data-testid="tab-pending-payments">Pending Payments</TabsTrigger>
             <TabsTrigger value="products" data-testid="tab-products">Products</TabsTrigger>
             <TabsTrigger value="qr-management" data-testid="tab-qr-management">QR Management</TabsTrigger>
+            <TabsTrigger value="api-keys" data-testid="tab-api-keys">API Keys</TabsTrigger>
             <TabsTrigger value="analytics" data-testid="tab-analytics">Analytics</TabsTrigger>
           </TabsList>
 
@@ -189,6 +191,10 @@ export default function Dashboard() {
 
           <TabsContent value="qr-management">
             <QrManagement />
+          </TabsContent>
+
+          <TabsContent value="api-keys">
+            <ApiKeyManagement />
           </TabsContent>
 
           <TabsContent value="analytics">
