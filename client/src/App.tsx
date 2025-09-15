@@ -11,6 +11,7 @@ import PaymentPage from "@/pages/payment";
 import IntegrationDocs from "@/pages/integration-docs";
 import DemoPaymentPage from "@/pages/demo-payment";
 import TestIntegrationPage from "@/pages/test-integration";
+import IntegrationGuide from "@/pages/integration-guide";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -19,6 +20,7 @@ function Router() {
     <Switch>
       {/* Public routes - accessible without authentication */}
       <Route path="/integration-docs" component={IntegrationDocs} />
+      <Route path="/integration-guide" component={IntegrationGuide} />
       <Route path="/demo" component={DemoPaymentPage} />
       <Route path="/test-integration" component={TestIntegrationPage} />
       <Route path="/payment/:orderId" component={PaymentPage} />
