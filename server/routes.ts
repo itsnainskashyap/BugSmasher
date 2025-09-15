@@ -188,21 +188,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Enhanced amount parser for auto-detection
+  const parseAmount = (amountInput: any): number | null => {
+    if (typeof amountInput === 'number' && amountInput > 0) {
+      return Math.round(amountInput * 100); // Convert to paise
+    }
+    
+    if (typeof amountInput === 'string') {
+      // Remove currency symbols and clean the string
+      const cleaned = amountInput
+        .replace(/[₹$€£¥,\s]/g, '') // Remove currency symbols and commas
+        .replace(/\.(\d{3,})/g, '$1') // Handle thousands separator dots
+        .trim();
+      
+      const parsed = parseFloat(cleaned);
+      if (!isNaN(parsed) && parsed > 0) {
+        return Math.round(parsed * 100); // Convert to paise
+      }
+    }
+    
+    return null;
+  };
+
   // Payment API routes (public, require API key)
   app.post('/api/onionpay/initiate', validateApiKey, async (req: any, res) => {
     try {
       const schema = z.object({
         productId: z.string().optional(),
-        amount: z.number().positive().optional(),
+        amount: z.union([z.number(), z.string()]).optional(), // Accept both number and string
         description: z.string(),
         customerEmail: z.string().email().optional(),
         callbackUrl: z.string().url().optional(),
+        // Enhanced fields for better integration
+        currency: z.string().optional(), // Support for currency detection
+        priceText: z.string().optional(), // Support for price text parsing
+        itemName: z.string().optional(), // Item name for better description
       });
 
       const data = schema.parse(req.body);
       
-      let amount = data.amount;
+      let amount: number | null = null;
       let productId = data.productId;
+      let finalDescription = data.description;
+
+      // Auto-detect amount from multiple sources
+      if (data.amount) {
+        amount = parseAmount(data.amount);
+      } else if (data.priceText) {
+        amount = parseAmount(data.priceText);
+      }
 
       // If productId provided, fetch amount from product
       if (productId && !amount) {
@@ -211,10 +245,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(404).json({ message: "Product not found" });
         }
         amount = product.price;
+        // Enhance description with product info
+        if (data.itemName) {
+          finalDescription = `${data.itemName} - ${data.description}`;
+        }
       }
 
-      if (!amount) {
-        return res.status(400).json({ message: "Amount is required" });
+      // Enhanced description with item name
+      if (data.itemName && !productId) {
+        finalDescription = `${data.itemName} - ${data.description}`;
+      }
+
+      if (!amount || amount <= 0) {
+        return res.status(400).json({ 
+          message: "Valid amount is required. Provide amount as number (in rupees) or string with currency symbol (₹100, 100.50, etc.)" 
+        });
+      }
+
+      // Validate amount range (minimum ₹1, maximum ₹1,00,000)
+      if (amount < 100 || amount > 10000000) {
+        return res.status(400).json({ 
+          message: "Amount must be between ₹1 and ₹1,00,000" 
+        });
       }
 
       // Get active QR code
@@ -229,21 +281,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         productId,
         amount,
         customerEmail: data.customerEmail,
-        description: data.description,
+        description: finalDescription,
         qrCodeId: qrCode.id,
         callbackUrl: data.callbackUrl,
         expiresAt,
       });
 
-      // Generate payment page data
+      // Generate payment page data with enhanced information
       const paymentData = {
         orderId: order.orderId,
         amount: amount / 100, // Convert paise to rupees for display
-        description: data.description,
+        amountInPaise: amount, // Original amount in paise
+        description: finalDescription,
         qrCodeUrl: qrCode.imageUrl,
         upiId: qrCode.upiId,
         expiresAt: expiresAt.toISOString(),
         paymentUrl: `${process.env.REPLIT_DOMAINS?.split(',')[0] || 'localhost:5000'}/payment/${order.orderId}`,
+        // Additional metadata for 3rd party integrations
+        currency: data.currency || 'INR',
+        itemName: data.itemName,
+        integrationInfo: {
+          autoDetected: !!data.priceText || (typeof data.amount === 'string'),
+          originalAmount: data.amount || data.priceText,
+          parsedAmount: amount / 100,
+        }
       };
 
       res.json(paymentData);

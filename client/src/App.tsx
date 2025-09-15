@@ -12,6 +12,7 @@ import IntegrationDocs from "@/pages/integration-docs";
 import DemoPaymentPage from "@/pages/demo-payment";
 import TestIntegrationPage from "@/pages/test-integration";
 import IntegrationGuide from "@/pages/integration-guide";
+import AutoAmountDemo from "@/pages/auto-amount-demo";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -22,6 +23,7 @@ function Router() {
       <Route path="/integration-docs" component={IntegrationDocs} />
       <Route path="/integration-guide" component={IntegrationGuide} />
       <Route path="/demo" component={DemoPaymentPage} />
+      <Route path="/auto-amount-demo" component={AutoAmountDemo} />
       <Route path="/test-integration" component={TestIntegrationPage} />
       <Route path="/payment/:orderId" component={PaymentPage} />
       
