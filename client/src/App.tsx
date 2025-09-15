@@ -8,21 +8,28 @@ import NotFound from "@/pages/not-found";
 import Landing from "@/pages/landing";
 import Dashboard from "@/pages/dashboard";
 import PaymentPage from "@/pages/payment";
+import IntegrationDocs from "@/pages/integration-docs";
+import DemoPaymentPage from "@/pages/demo-payment";
+import TestIntegrationPage from "@/pages/test-integration";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
 
   return (
     <Switch>
+      {/* Public routes - accessible without authentication */}
+      <Route path="/integration-docs" component={IntegrationDocs} />
+      <Route path="/demo" component={DemoPaymentPage} />
+      <Route path="/test-integration" component={TestIntegrationPage} />
+      <Route path="/payment/:orderId" component={PaymentPage} />
+      
       {isLoading || !isAuthenticated ? (
         <>
           <Route path="/" component={Landing} />
-          <Route path="/payment/:orderId" component={PaymentPage} />
         </>
       ) : (
         <>
           <Route path="/" component={Dashboard} />
-          <Route path="/payment/:orderId" component={PaymentPage} />
         </>
       )}
       <Route component={NotFound} />
