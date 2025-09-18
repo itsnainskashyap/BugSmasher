@@ -682,6 +682,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.sendFile('client/public/widget/onionpay.js', { root: process.cwd() });
   });
 
+  // APK Download endpoint
+  app.get('/api/download-apk', async (req, res) => {
+    try {
+      const apkPath = path.join(process.cwd(), 'client', 'public', 'apk', 'OnionPay.apk');
+      
+      // Check if pre-built APK exists
+      if (fs.existsSync(apkPath)) {
+        // Serve the pre-built APK file
+        res.download(apkPath, 'OnionPay.apk', (err) => {
+          if (err) {
+            console.error('Error downloading APK:', err);
+            // Fallback to PWA Builder
+            const protocol = req.get('X-Forwarded-Proto') || (req.secure ? 'https' : 'http');
+            const host = req.get('Host') || 'localhost:5000';
+            const appUrl = `${protocol}://${host}`;
+            const apkDownloadUrl = `https://www.pwabuilder.com/?url=${encodeURIComponent(appUrl)}`;
+            res.redirect(302, apkDownloadUrl);
+          }
+        });
+      } else {
+        // Fallback: Redirect to PWA Builder for APK generation
+        const protocol = req.get('X-Forwarded-Proto') || (req.secure ? 'https' : 'http');
+        const host = req.get('Host') || 'localhost:5000';
+        const appUrl = `${protocol}://${host}`;
+        const apkDownloadUrl = `https://www.pwabuilder.com/?url=${encodeURIComponent(appUrl)}`;
+        
+        res.redirect(302, apkDownloadUrl);
+      }
+    } catch (error) {
+      console.error('Error in APK download endpoint:', error);
+      res.status(500).json({ 
+        message: 'Failed to generate APK download',
+        fallbackUrl: `https://www.pwabuilder.com/?url=${encodeURIComponent(req.get('Host') || 'localhost:5000')}`
+      });
+    }
+  });
+
   // Serve uploaded files
   app.use('/uploads', (req, res, next) => {
     res.setHeader('Cache-Control', 'public, max-age=31536000'); // 1 year

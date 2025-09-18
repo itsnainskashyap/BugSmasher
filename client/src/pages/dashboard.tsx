@@ -13,7 +13,7 @@ import QrManagement from "@/components/qr-management";
 import Analytics from "@/components/analytics";
 import ApiKeyManagement from "@/components/api-key-management";
 import useWebSocket from "@/hooks/useWebSocket";
-import { Bell, LogOut, TrendingUp, Clock, CheckCircle, Package } from "lucide-react";
+import { Bell, LogOut, TrendingUp, Clock, CheckCircle, Package, Download } from "lucide-react";
 
 export default function Dashboard() {
   const { toast } = useToast();
@@ -74,6 +74,23 @@ export default function Dashboard() {
               <span className="text-muted-foreground">Admin Dashboard</span>
             </div>
             <div className="flex items-center space-x-4">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => {
+                  toast({
+                    title: "Starting APK Download",
+                    description: "Your APK download will begin shortly...",
+                  });
+                  window.location.href = '/api/download-apk';
+                }}
+                className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white border-0 hover:from-purple-700 hover:to-pink-700"
+                data-testid="button-download-apk"
+              >
+                <Download className="h-4 w-4" />
+                <span className="hidden sm:inline">Download APK</span>
+                <span className="sm:hidden">APK</span>
+              </Button>
               <Button variant="ghost" size="icon" data-testid="button-notifications">
                 <Bell className="h-5 w-5" />
                 {(stats?.pendingPayments ?? 0) > 0 && (

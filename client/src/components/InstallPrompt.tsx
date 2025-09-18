@@ -26,7 +26,7 @@ export const InstallPrompt = () => {
         if (!dismissed && window.location.pathname !== '/') { // User is logged in
           setTimeout(() => {
             setHasShownPrompt(true);
-            setShowInstallPrompt(true); // Actually show the dialog
+            // Note: showInstallPrompt is already being managed by the hook
           }, 2000);
         }
       }
