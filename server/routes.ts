@@ -48,21 +48,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // API Key middleware
-  const validateApiKey = async (req: any, res: any, next: any) => {
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({ message: 'API key required' });
-    }
+  // Enhanced API Key middleware with key type detection and enforcement
+  const validateApiKey = (requiredType?: 'publishable' | 'secret') => {
+    return async (req: any, res: any, next: any) => {
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return res.status(401).json({ message: 'API key required' });
+      }
 
-    const key = authHeader.substring(7);
-    const apiKey = await storage.validateApiKey(key);
-    
-    if (!apiKey) {
-      return res.status(401).json({ message: 'Invalid API key' });
-    }
+      const key = authHeader.substring(7);
+      const apiKey = await storage.validateApiKey(key);
+      
+      if (!apiKey) {
+        return res.status(401).json({ message: 'Invalid API key' });
+      }
 
-    req.apiKey = apiKey;
+      // Detect and enforce key type
+      const keyType = key.startsWith('pk_') ? 'publishable' : 'secret';
+      
+      if (requiredType && keyType !== requiredType) {
+        return res.status(403).json({ 
+          message: `This endpoint requires ${requiredType} key. Use ${requiredType === 'publishable' ? 'pk_' : 'sk_'} prefixed key.` 
+        });
+      }
+
+      req.apiKey = apiKey;
+      req.keyType = keyType;
+      next();
+    };
+  };
+
+  // Origin validation for publishable keys (future use)
+  const validateOrigin = (req: any, res: any, next: any) => {
+    if (req.keyType === 'publishable') {
+      const origin = req.headers.origin;
+      // For now, allow all origins for existing keys, but log for monitoring
+      console.log(`Publishable key used from origin: ${origin}`);
+    }
     next();
   };
 
@@ -210,8 +232,137 @@ export async function registerRoutes(app: Express): Promise<Server> {
     return null;
   };
 
-  // Payment API routes (public, require API key)
-  app.post('/api/onionpay/initiate', validateApiKey, async (req: any, res) => {
+  // V1 API - Checkout Sessions (new recommended endpoint) - Publishable key only
+  app.post('/v1/checkout/sessions', validateApiKey('publishable'), validateOrigin, async (req: any, res) => {
+    try {
+      const schema = z.object({
+        amount: z.union([z.number(), z.string()]).optional(),
+        description: z.string(),
+        itemName: z.string().optional(),
+        customerEmail: z.string().email().optional(),
+        callbackUrl: z.string().url().optional(),
+        currency: z.string().default('INR'),
+        productId: z.string().optional(),
+        priceText: z.string().optional(),
+      });
+
+      const data = schema.parse(req.body);
+      
+      let amount: number | null = null;
+      let productId = data.productId;
+      let finalDescription = data.description;
+
+      // Auto-detect amount from multiple sources
+      if (data.amount) {
+        amount = parseAmount(data.amount);
+      } else if (data.priceText) {
+        amount = parseAmount(data.priceText);
+      }
+
+      // If productId provided, fetch amount from product
+      if (productId && !amount) {
+        const product = await storage.getProduct(productId);
+        if (!product) {
+          return res.status(404).json({ message: "Product not found" });
+        }
+        amount = product.price;
+        if (data.itemName) {
+          finalDescription = `${data.itemName} - ${data.description}`;
+        }
+      }
+
+      // Enhanced description with item name
+      if (data.itemName && !productId) {
+        finalDescription = `${data.itemName} - ${data.description}`;
+      }
+
+      if (!amount || amount <= 0) {
+        return res.status(400).json({ 
+          message: "Valid amount is required. Provide amount as number (in rupees) or string with currency symbol (₹100, 100.50, etc.)" 
+        });
+      }
+
+      // Validate amount range (minimum ₹1, maximum ₹1,00,000)
+      if (amount < 100 || amount > 10000000) {
+        return res.status(400).json({ 
+          message: "Amount must be between ₹1 and ₹1,00,000" 
+        });
+      }
+
+      // Get active QR code
+      const qrCode = await storage.getActiveQrCode();
+      if (!qrCode) {
+        return res.status(503).json({ message: "Payment gateway not configured" });
+      }
+
+      // Create order
+      const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+      const order = await storage.createOrder({
+        productId,
+        amount,
+        customerEmail: data.customerEmail,
+        description: finalDescription,
+        qrCodeId: qrCode.id,
+        callbackUrl: data.callbackUrl,
+        expiresAt,
+      });
+
+      // V1 API Response format with proper URL construction
+      const protocol = req.get('X-Forwarded-Proto') || (req.secure ? 'https' : 'http');
+      const host = req.get('Host') || 'localhost:5000';
+      const paymentUrl = `${protocol}://${host}/payment/${order.orderId}`;
+      
+      res.json({
+        orderId: order.orderId,
+        paymentUrl,
+        amount: amount / 100, // Convert paise to rupees
+        currency: data.currency,
+        description: finalDescription,
+        expiresAt: expiresAt.toISOString(),
+        qrCodeUrl: qrCode.imageUrl,
+        upiId: qrCode.upiId,
+      });
+    } catch (error: any) {
+      console.error("Error creating checkout session:", error);
+      res.status(400).json({ message: error.message || "Failed to create checkout session" });
+    }
+  });
+
+  // V1 API - Get checkout session status
+  app.get('/v1/checkout/status/:orderId', async (req, res) => {
+    try {
+      const { orderId } = req.params;
+      const order = await storage.getOrderByOrderId(orderId);
+      
+      if (!order) {
+        return res.status(404).json({ message: "Order not found" });
+      }
+
+      // Check if order has expired
+      if (order.status === 'pending' && new Date() > order.expiresAt) {
+        await storage.updateOrder(order.id, { status: 'expired' });
+        return res.json({ 
+          status: 'expired', 
+          orderId: order.orderId,
+          amount: order.amount / 100,
+          updatedAt: order.updatedAt 
+        });
+      }
+
+      res.json({ 
+        status: order.status,
+        orderId: order.orderId,
+        amount: order.amount / 100,
+        updatedAt: order.updatedAt,
+      });
+    } catch (error) {
+      console.error("Error checking checkout status:", error);
+      res.status(500).json({ message: "Failed to check checkout status" });
+    }
+  });
+
+  // Legacy API (maintain backward compatibility) - Accept any key type
+  app.post('/api/onionpay/initiate', validateApiKey(), async (req: any, res) => {
     try {
       const schema = z.object({
         productId: z.string().optional(),
@@ -296,7 +447,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         qrCodeUrl: qrCode.imageUrl,
         upiId: qrCode.upiId,
         expiresAt: expiresAt.toISOString(),
-        paymentUrl: `${process.env.REPLIT_DOMAINS?.split(',')[0] || 'localhost:5000'}/payment/${order.orderId}`,
+        paymentUrl: `${req.get('X-Forwarded-Proto') || (req.secure ? 'https' : 'http')}://${req.get('Host') || 'localhost:5000'}/payment/${order.orderId}`,
         // Additional metadata for 3rd party integrations
         currency: data.currency || 'INR',
         itemName: data.itemName,
@@ -510,6 +661,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Error creating API key:", error);
       res.status(500).json({ message: "Failed to create API key" });
     }
+  });
+
+  // Serve widget files
+  app.get('/widget/onionpay.js', (req, res) => {
+    res.setHeader('Content-Type', 'application/javascript');
+    res.setHeader('Cache-Control', 'public, max-age=3600'); // 1 hour cache
+    res.sendFile('client/public/widget/onionpay.js', { root: process.cwd() });
   });
 
   // Serve uploaded files

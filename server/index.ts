@@ -6,12 +6,36 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-// CORS and preflight handler for API routes
+// Enhanced CORS handler with proper origin validation
 app.use((req, res, next) => {
-  if (req.path.startsWith('/api')) {
-    res.setHeader('Access-Control-Allow-Origin', '*');
+  if (req.path.startsWith('/api') || req.path.startsWith('/v1')) {
+    const origin = req.headers.origin;
+    
+    // For development, allow localhost and Replit domains
+    const allowedOrigins = [
+      'http://localhost:5000',
+      'https://localhost:5000',
+      ...(process.env.REPLIT_DOMAINS ? process.env.REPLIT_DOMAINS.split(',').map(d => `https://${d}`) : [])
+    ];
+    
+    // In development mode or if origin is in allowlist, echo the origin
+    if (process.env.NODE_ENV === 'development') {
+      res.setHeader('Access-Control-Allow-Origin', origin || '*');
+    } else if (origin && allowedOrigins.includes(origin)) {
+      res.setHeader('Access-Control-Allow-Origin', origin);
+    } else {
+      // For production, we'll allow any origin for v1 endpoints (publishable keys)
+      // This will be restricted per-key later
+      if (req.path.startsWith('/v1')) {
+        res.setHeader('Access-Control-Allow-Origin', origin || '*');
+      } else {
+        res.setHeader('Access-Control-Allow-Origin', allowedOrigins[0] || '*');
+      }
+    }
+    
     res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    
     if (req.method === 'OPTIONS') {
       return res.sendStatus(204);
     }

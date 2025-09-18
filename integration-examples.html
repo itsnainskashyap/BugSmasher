@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OnionPay Integration Examples</title>
+    <style>
+        body { font-family: system-ui, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        .example { background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px; padding: 20px; margin: 20px 0; }
+        .code { background: #2d3748; color: #e2e8f0; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        .btn { background: #6A1B9A; color: white; padding: 12px 24px; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; }
+        .btn:hover { opacity: 0.9; }
+        .price { font-size: 24px; font-weight: bold; color: #6A1B9A; }
+    </style>
+</head>
+<body>
+    <h1>🧅 OnionPay Integration Examples</h1>
+    <p>Integrate OnionPay in your website with just one line of HTML!</p>
+
+    <div class="example">
+        <h2>1. Simple Payment Button</h2>
+        <p>Basic payment button with fixed amount:</p>
+        <div class="code">
+&lt;script src="/widget/onionpay.js"&gt;&lt;/script&gt;
+&lt;button data-onionpay="pay" 
+        data-key="your_api_key_here"
+        data-amount="299"
+        data-desc="Premium Subscription"&gt;
+    Pay ₹299
+&lt;/button&gt;
+        </div>
+        <p><strong>Demo:</strong></p>
+        <button class="btn" 
+                data-onionpay="pay"
+                data-key="demo_key"
+                data-amount="299"
+                data-desc="Premium Subscription">
+            Pay ₹299
+        </button>
+    </div>
+
+    <div class="example">
+        <h2>2. Dynamic Amount with Selector</h2>
+        <p>Auto-detect amount from another element:</p>
+        <div class="code">
+&lt;div class="product"&gt;
+    &lt;h3&gt;Premium Course&lt;/h3&gt;
+    &lt;div class="price" id="course-price"&gt;₹1,999&lt;/div&gt;
+    &lt;button data-onionpay="pay"
+            data-key="your_api_key_here"
+            data-amount-selector="#course-price"
+            data-desc="Premium Web Development Course"
+            data-item="Premium Course"&gt;
+        Buy Now
+    &lt;/button&gt;
+&lt;/div&gt;
+        </div>
+        <p><strong>Demo:</strong></p>
+        <div style="border: 1px solid #ddd; padding: 15px; border-radius: 6px;">
+            <h3>Premium Course</h3>
+            <div class="price" id="course-price">₹1,999</div>
+            <button class="btn" 
+                    data-onionpay="pay"
+                    data-key="demo_key"
+                    data-amount-selector="#course-price"
+                    data-desc="Premium Web Development Course"
+                    data-item="Premium Course">
+                Buy Now
+            </button>
+        </div>
+    </div>
+
+    <div class="example">
+        <h2>3. Full Redirect Integration</h2>
+        <p>Redirect to payment page instead of modal:</p>
+        <div class="code">
+&lt;button data-onionpay="pay"
+        data-key="your_api_key_here"
+        data-amount="1299"
+        data-desc="Advanced Membership"
+        data-email="user@example.com"
+        data-redirect="true"&gt;
+    Proceed to Payment
+&lt;/button&gt;
+        </div>
+        <p><strong>Demo:</strong></p>
+        <button class="btn" 
+                data-onionpay="pay"
+                data-key="demo_key"
+                data-amount="1299"
+                data-desc="Advanced Membership"
+                data-email="user@example.com"
+                data-redirect="true">
+            Proceed to Payment
+        </button>
+    </div>
+
+    <div class="example">
+        <h2>4. Server-to-Server Integration (Backend)</h2>
+        <p>For backend integration, call the API directly:</p>
+        <div class="code">
+// Node.js Example
+const response = await fetch('https://yourapp.replit.app/v1/checkout/sessions', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'Authorization': 'Bearer your_secret_key_here'
+  },
+  body: JSON.stringify({
+    amount: 2999,
+    description: 'Enterprise Plan',
+    itemName: 'Monthly Subscription',
+    customerEmail: 'customer@example.com',
+    callbackUrl: 'https://yoursite.com/payment-webhook'
+  })
+});
+
+const session = await response.json();
+// Redirect user to: session.paymentUrl
+        </div>
+    </div>
+
+    <div class="example">
+        <h2>5. Listen to Payment Events</h2>
+        <p>Handle payment completion with JavaScript events:</p>
+        <div class="code">
+&lt;script src="/widget/onionpay.js"&gt;&lt;/script&gt;
+&lt;script&gt;
+// Method 1: Using widget API
+onionpay.on('success', function(payment) {
+    alert('Payment successful! Order ID: ' + payment.orderId);
+    window.location.href = '/thank-you';
+});
+
+onionpay.on('failed', function(payment) {
+    alert('Payment failed. Please try again.');
+});
+
+// Method 2: Using window events
+window.addEventListener('onionpay:success', function(event) {
+    console.log('Payment approved:', event.detail);
+});
+&lt;/script&gt;
+        </div>
+    </div>
+
+    <h2>📚 Integration Attributes</h2>
+    <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+        <tr style="background: #f8f9fa;">
+            <th style="padding: 12px; text-align: left; border: 1px solid #ddd;">Attribute</th>
+            <th style="padding: 12px; text-align: left; border: 1px solid #ddd;">Description</th>
+            <th style="padding: 12px; text-align: left; border: 1px solid #ddd;">Required</th>
+        </tr>
+        <tr>
+            <td style="padding: 12px; border: 1px solid #ddd;"><code>data-onionpay</code></td>
+            <td style="padding: 12px; border: 1px solid #ddd;">Set to "pay" to enable payment button</td>
+            <td style="padding: 12px; border: 1px solid #ddd;">✅ Yes</td>
+        </tr>
+        <tr>
+            <td style="padding: 12px; border: 1px solid #ddd;"><code>data-key</code></td>
+            <td style="padding: 12px; border: 1px solid #ddd;">Your OnionPay API key</td>
+            <td style="padding: 12px; border: 1px solid #ddd;">✅ Yes</td>
+        </tr>
+        <tr>
+            <td style="padding: 12px; border: 1px solid #ddd;"><code>data-amount</code></td>
+            <td style="padding: 12px; border: 1px solid #ddd;">Fixed amount in rupees (e.g., "299")</td>
+            <td style="padding: 12px; border: 1px solid #ddd;">⚠️ Yes (or data-amount-selector)</td>
+        </tr>
+        <tr>
+            <td style="padding: 12px; border: 1px solid #ddd;"><code>data-amount-selector</code></td>
+            <td style="padding: 12px; border: 1px solid #ddd;">CSS selector to auto-detect amount (e.g., "#price")</td>
+            <td style="padding: 12px; border: 1px solid #ddd;">⚠️ Yes (or data-amount)</td>
+        </tr>
+        <tr>
+            <td style="padding: 12px; border: 1px solid #ddd;"><code>data-desc</code></td>
+            <td style="padding: 12px; border: 1px solid #ddd;">Payment description</td>
+            <td style="padding: 12px; border: 1px solid #ddd;">✅ Yes</td>
+        </tr>
+        <tr>
+            <td style="padding: 12px; border: 1px solid #ddd;"><code>data-item</code></td>
+            <td style="padding: 12px; border: 1px solid #ddd;">Item/product name</td>
+            <td style="padding: 12px; border: 1px solid #ddd;">❌ No</td>
+        </tr>
+        <tr>
+            <td style="padding: 12px; border: 1px solid #ddd;"><code>data-email</code></td>
+            <td style="padding: 12px; border: 1px solid #ddd;">Customer email</td>
+            <td style="padding: 12px; border: 1px solid #ddd;">❌ No</td>
+        </tr>
+        <tr>
+            <td style="padding: 12px; border: 1px solid #ddd;"><code>data-redirect</code></td>
+            <td style="padding: 12px; border: 1px solid #ddd;">Set to "true" to redirect instead of modal</td>
+            <td style="padding: 12px; border: 1px solid #ddd;">❌ No</td>
+        </tr>
+    </table>
+
+    <script src="/widget/onionpay.js"></script>
+    <script>
+        // Demo event handlers
+        onionpay.on('success', function(payment) {
+            alert('🎉 Payment successful!\nOrder ID: ' + payment.orderId + '\nAmount: ₹' + payment.amount);
+        });
+
+        onionpay.on('failed', function(payment) {
+            alert('❌ Payment failed. Please try again.');
+        });
+
+        onionpay.on('error', function(error) {
+            alert('⚠️ Error: ' + error.message);
+        });
+    </script>
+</body>
+</html>
