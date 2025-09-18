@@ -79,16 +79,16 @@ export default function Dashboard() {
                 size="sm"
                 onClick={() => {
                   toast({
-                    title: "Starting APK Download",
-                    description: "Your APK download will begin shortly...",
+                    title: "📱 Opening APK Builder",
+                    description: "PWABuilder will help you create a real Android APK. Follow the steps to download your app.",
                   });
-                  window.location.href = '/api/download-apk';
+                  window.open('/api/download-apk', '_blank');
                 }}
                 className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white border-0 hover:from-purple-700 hover:to-pink-700"
                 data-testid="button-download-apk"
               >
                 <Download className="h-4 w-4" />
-                <span className="hidden sm:inline">Download APK</span>
+                <span className="hidden sm:inline">Build APK</span>
                 <span className="sm:hidden">APK</span>
               </Button>
               <Button variant="ghost" size="icon" data-testid="button-notifications">
