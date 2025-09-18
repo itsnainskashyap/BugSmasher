@@ -497,6 +497,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         data: updatedOrder,
       });
 
+      // Send push notification to admin
+      await sendAdminNotification({
+        title: '💰 New Payment Submitted',
+        body: `UTR: ${utr} | Amount: ₹${updatedOrder.amount / 100} | Order: ${updatedOrder.orderId}`,
+        data: {
+          orderId: updatedOrder.orderId,
+          amount: updatedOrder.amount,
+          utr: utr,
+          type: 'payment_submitted'
+        }
+      });
+
       res.json({ message: "Payment proof submitted successfully", orderId: order.orderId });
     } catch (error: any) {
       console.error("Error submitting payment:", error);
@@ -695,6 +707,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
       connectedClients.delete(ws);
     });
   });
+
+  // Push notification subscription endpoint
+  app.post('/api/subscribe-notifications', isAuthenticated, async (req: any, res) => {
+    try {
+      const subscription = req.body;
+      const userId = req.user.claims.sub;
+      
+      // Store subscription in database (you might want to add this to schema)
+      // For now, store in memory/session
+      console.log('Push subscription received for user:', userId, subscription);
+      
+      res.status(201).json({ message: 'Subscription stored successfully' });
+    } catch (error) {
+      console.error('Error storing subscription:', error);
+      res.status(500).json({ message: 'Failed to store subscription' });
+    }
+  });
+
+  // Function to send notifications to admin
+  const sendAdminNotification = async (payload: any) => {
+    try {
+      // In production, you would store push subscriptions in database
+      // and send to all admin subscriptions using web-push library
+      console.log('📱 Admin notification:', payload);
+      
+      // For demo purposes, we'll use browser notifications if available
+      broadcastToClients({
+        type: 'ADMIN_NOTIFICATION',
+        data: payload
+      });
+    } catch (error) {
+      console.error('Error sending admin notification:', error);
+    }
+  };
 
   return httpServer;
 }

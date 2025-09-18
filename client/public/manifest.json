@@ -1,0 +1,57 @@
+{
+  "name": "OnionPay",
+  "short_name": "OnionPay",
+  "description": "Secure UPI Payment Gateway",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#6A1B9A",
+  "theme_color": "#6A1B9A",
+  "orientation": "portrait",
+  "categories": ["finance", "business"],
+  "lang": "en",
+  "icons": [
+    {
+      "src": "/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512x512.png", 
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshot-wide.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide"
+    },
+    {
+      "src": "/screenshot-narrow.png",
+      "sizes": "720x1280", 
+      "type": "image/png",
+      "form_factor": "narrow"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Dashboard",
+      "short_name": "Dashboard",
+      "description": "View payment dashboard",
+      "url": "/dashboard",
+      "icons": [{ "src": "/icon-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Create Payment",
+      "short_name": "Payment",
+      "description": "Create new payment",
+      "url": "/payment",
+      "icons": [{ "src": "/icon-192x192.png", "sizes": "192x192" }]
+    }
+  ],
+  "prefer_related_applications": false
+}
