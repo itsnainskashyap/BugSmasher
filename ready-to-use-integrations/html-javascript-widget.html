@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OnionPay Integration - Copy Paste Ready</title>
+</head>
+<body>
+    <!-- ====== OnionPay Integration - Copy This Code ====== -->
+    
+    <!-- Step 1: Add Payment Button -->
+    <button 
+        data-onionpay="pay"
+        data-amount="999"
+        data-desc="Product Purchase"
+        data-item="Your Product Name"
+        data-email="customer@example.com"
+        data-key="$2b$12$ORcN1LA4ZbRsKYtgY5grU.Oe5D/2AFoZXWd7DekDYLBlWS.EkiCq6"
+        data-api-base="https://onionpays.replit.app"
+        data-redirect="false"
+        style="background: #6A1B9A; color: white; padding: 15px 30px; border: none; border-radius: 8px; font-size: 16px; cursor: pointer;">
+        Pay ₹999
+    </button>
+    
+    <!-- Step 2: Load OnionPay Widget Script -->
+    <script src="https://onionpays.replit.app/widget/onionpay.js"></script>
+    
+    <!-- Step 3: Handle Payment Events -->
+    <script>
+        window.addEventListener('onionpay:success', function(event) {
+            alert('Payment Successful! Order ID: ' + event.detail.orderId);
+            // Redirect to success page or update UI
+            window.location.href = '/success?order=' + event.detail.orderId;
+        });
+        
+        window.addEventListener('onionpay:failed', function(event) {
+            alert('Payment failed. Please try again.');
+        });
+        
+        window.addEventListener('onionpay:expired', function(event) {
+            alert('Payment expired. Please start again.');
+        });
+    </script>
+    
+    <!-- ====== End OnionPay Integration Code ====== -->
+</body>
+</html>
