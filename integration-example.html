@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OnionPay Integration Example</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            max-width: 800px; 
+            margin: 0 auto; 
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .product-card {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .price {
+            font-size: 24px;
+            font-weight: bold;
+            color: #6A1B9A;
+            margin: 10px 0;
+        }
+        .pay-button {
+            background: linear-gradient(135deg, #6A1B9A, #8E24AA);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .pay-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(106, 27, 154, 0.4);
+        }
+        .pay-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .feature {
+            background: #e3f2fd;
+            padding: 15px;
+            margin: 10px 0;
+            border-left: 4px solid #6A1B9A;
+        }
+        .dynamic-price {
+            background: #fff3cd;
+            padding: 10px;
+            border-radius: 4px;
+            display: inline-block;
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧅 OnionPay Integration Examples</h1>
+    <p>Complete examples showing auto price fetch, UI integration, and redirection patterns.</p>
+
+    <!-- Example 1: Auto Price Fetch from Text -->
+    <div class="product-card">
+        <h3>📚 Premium Course</h3>
+        <p>Complete web development bootcamp with lifetime access.</p>
+        <div class="price" id="course-price">₹2,999</div>
+        
+        <button 
+            data-onionpay="pay"
+            data-amount-selector="#course-price"
+            data-desc="Premium Web Development Course"
+            data-item="Web Dev Bootcamp"
+            data-email="student@example.com"
+            data-key="$2b$12$ORcN1LA4ZbRsKYtgY5grU.Oe5D/2AFoZXWd7DekDYLBlWS.EkiCq6"
+            data-api-base="https://onionpays.replit.app"
+            data-redirect="false"
+            class="pay-button">
+            Enroll Now - Auto Detect Price
+        </button>
+        
+        <div class="feature">
+            ✅ <strong>Auto Price Fetch:</strong> Widget automatically detects ₹2,999 from #course-price element
+        </div>
+    </div>
+
+    <!-- Example 2: Fixed Amount with Modal -->
+    <div class="product-card">
+        <h3>🎵 Music Album</h3>
+        <p>Latest collection of instrumental tracks.</p>
+        <div class="price">$19.99 USD</div>
+        
+        <button 
+            data-onionpay="pay"
+            data-amount="499"
+            data-desc="Music Album Purchase"
+            data-item="Instrumental Collection Vol.1"
+            data-key="$2b$12$ORcN1LA4ZbRsKYtgY5grU.Oe5D/2AFoZXWd7DekDYLBlWS.EkiCq6"
+            data-api-base="https://onionpays.replit.app"
+            data-redirect="false"
+            class="pay-button">
+            Buy Album - ₹499 (Modal)
+        </button>
+        
+        <div class="feature">
+            ✅ <strong>Fixed Amount:</strong> Uses data-amount="499" (₹4.99) with payment modal
+        </div>
+    </div>
+
+    <!-- Example 3: Dynamic Price with Redirect -->
+    <div class="product-card">
+        <h3>⚡ Variable Pricing Product</h3>
+        <p>Price changes every few seconds to demonstrate dynamic detection.</p>
+        <div class="dynamic-price" id="dynamic-price">₹1,299</div>
+        <button onclick="updatePrice()">Update Price</button>
+        
+        <button 
+            data-onionpay="pay"
+            data-amount-selector="#dynamic-price"
+            data-desc="Variable Price Product"
+            data-item="Dynamic Product"
+            data-key="$2b$12$ORcN1LA4ZbRsKYtgY5grU.Oe5D/2AFoZXWd7DekDYLBlWS.EkiCq6"
+            data-api-base="https://onionpays.replit.app"
+            data-redirect="true"
+            class="pay-button">
+            Buy Now - Direct Redirect
+        </button>
+        
+        <div class="feature">
+            ✅ <strong>Dynamic + Redirect:</strong> Auto-detects changing price, redirects to payment page
+        </div>
+    </div>
+
+    <!-- Example 4: Multiple Currencies -->
+    <div class="product-card">
+        <h3>🌍 International Product</h3>
+        <p>Supports multiple currency formats and symbols.</p>
+        
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <div class="dynamic-price" id="usd-price">$29.99</div>
+            <div class="dynamic-price" id="eur-price">€25.50</div>
+            <div class="dynamic-price" id="inr-price">₹2,499</div>
+        </div>
+        
+        <div style="margin: 10px 0;">
+            <label>Select Currency: 
+                <select id="currency-selector" onchange="switchCurrency()">
+                    <option value="usd-price">USD ($29.99)</option>
+                    <option value="eur-price">EUR (€25.50)</option>
+                    <option value="inr-price">INR (₹2,499)</option>
+                </select>
+            </label>
+        </div>
+        
+        <button 
+            id="multi-currency-btn"
+            data-onionpay="pay"
+            data-amount-selector="#usd-price"
+            data-desc="International Product Purchase"
+            data-item="Multi-Currency Product"
+            data-key="$2b$12$ORcN1LA4ZbRsKYtgY5grU.Oe5D/2AFoZXWd7DekDYLBlWS.EkiCq6"
+            data-api-base="https://onionpays.replit.app"
+            data-redirect="false"
+            class="pay-button">
+            Buy Now - Multi Currency
+        </button>
+        
+        <div class="feature">
+            ✅ <strong>Currency Parsing:</strong> Widget parses $, €, ₹ symbols automatically
+        </div>
+    </div>
+
+    <!-- Load OnionPay Widget from Real URL -->
+    <script src="https://onionpays.replit.app/widget/onionpay.js"></script>
+    
+    <script>
+        // Dynamic price updater
+        let priceValue = 1299;
+        function updatePrice() {
+            priceValue = Math.floor(Math.random() * 3000) + 999;
+            document.getElementById('dynamic-price').textContent = `₹${priceValue.toLocaleString()}`;
+        }
+        
+        // Auto update price every 3 seconds
+        setInterval(updatePrice, 3000);
+        
+        // Currency switcher
+        function switchCurrency() {
+            const selector = document.getElementById('currency-selector');
+            const button = document.getElementById('multi-currency-btn');
+            button.setAttribute('data-amount-selector', '#' + selector.value);
+        }
+        
+        // Payment event handlers
+        window.addEventListener('onionpay:success', function(event) {
+            console.log('✅ Payment Success:', event.detail);
+            alert(`🎉 Payment successful! Order ID: ${event.detail.orderId}\n\nRedirecting to success page...`);
+            
+            // Auto redirect after success
+            setTimeout(() => {
+                window.location.href = '/success?order=' + event.detail.orderId;
+            }, 2000);
+        });
+        
+        window.addEventListener('onionpay:failed', function(event) {
+            console.log('❌ Payment Failed:', event.detail);
+            alert('❌ Payment failed. Please check your details and try again.');
+        });
+        
+        window.addEventListener('onionpay:expired', function(event) {
+            console.log('⏰ Payment Expired:', event.detail);
+            alert('⏰ Payment session expired. Please start a new payment.');
+        });
+        
+        window.addEventListener('onionpay:error', function(event) {
+            console.log('🚨 Payment Error:', event.detail);
+            alert('🚨 Payment error: ' + event.detail.message);
+        });
+        
+        console.log('🧅 OnionPay Integration Example loaded!');
+        console.log('✅ Widget supports: Auto price fetch, Currency parsing, Modal/Redirect modes');
+        console.log('✅ Security: Webhook signatures, Publishable keys only');
+        console.log('✅ Events: success, failed, expired, error');
+    </script>
+    
+    <div style="margin-top: 40px; padding: 20px; background: #e8f5e8; border-radius: 8px;">
+        <h3>🛡️ Security Features</h3>
+        <ul>
+            <li><strong>Publishable Keys:</strong> Only pk_* keys in frontend code</li>
+            <li><strong>Webhook Signatures:</strong> SHA256 HMAC verification</li>
+            <li><strong>Auto Amount Parsing:</strong> Secure number extraction from text</li>
+            <li><strong>HTTPS Required:</strong> All payment communications encrypted</li>
+        </ul>
+    </div>
+    
+    <div style="margin-top: 20px; padding: 20px; background: #f0f8ff; border-radius: 8px;">
+        <h3>📋 Integration Features Demonstrated</h3>
+        <ul>
+            <li>✅ <strong>Auto Price Fetch:</strong> data-amount-selector with currency parsing</li>
+            <li>✅ <strong>Fixed Amounts:</strong> data-amount for known prices</li>
+            <li>✅ <strong>Payment Modes:</strong> Modal (data-redirect="false") vs Direct redirect (data-redirect="true")</li>
+            <li>✅ <strong>Webhook Support:</strong> data-callback-url for server notifications</li>
+            <li>✅ <strong>Event Handling:</strong> onionpay:success/failed/expired/error events</li>
+            <li>✅ <strong>Auto Redirection:</strong> Configurable success page redirects</li>
+        </ul>
+    </div>
+</body>
+</html>

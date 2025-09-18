@@ -313,6 +313,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const paymentUrl = `${protocol}://${host}/payment/${order.orderId}`;
       
       res.json({
+        success: true,
         orderId: order.orderId,
         paymentUrl,
         amount: amount / 100, // Convert paise to rupees
@@ -605,15 +606,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Call webhook if provided
       if (order.callbackUrl) {
         try {
+          const webhookPayload = {
+            orderId: order.orderId,
+            status: 'approved',
+            amount: order.amount,
+            timestamp: new Date().toISOString(),
+          };
+          
+          // Create webhook signature for security
+          const webhookSecret = process.env.WEBHOOK_SECRET || 'default-webhook-secret';
+          const crypto = await import('crypto');
+          const signature = crypto.createHmac('sha256', webhookSecret)
+            .update(JSON.stringify(webhookPayload))
+            .digest('hex');
+            
           await fetch(order.callbackUrl, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              orderId: order.orderId,
-              status: 'approved',
-              amount: order.amount,
-              timestamp: new Date().toISOString(),
-            }),
+            headers: { 
+              'Content-Type': 'application/json',
+              'X-OnionPay-Signature': `sha256=${signature}`
+            },
+            body: JSON.stringify(webhookPayload),
           });
         } catch (webhookError) {
           console.error("Webhook error:", webhookError);

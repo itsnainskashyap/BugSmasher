@@ -64,8 +64,13 @@
         if (paymentData.amountSelector && !paymentData.amount) {
           const amountElement = document.querySelector(paymentData.amountSelector);
           if (amountElement) {
-            paymentData.amount = amountElement.textContent || amountElement.value;
+            let rawAmount = amountElement.textContent || amountElement.value;
+            // Parse amount to number, removing currency symbols and formatting
+            paymentData.amount = this.parseAmount(rawAmount);
           }
+        } else if (paymentData.amount && typeof paymentData.amount === 'string') {
+          // Parse amount if it's a string
+          paymentData.amount = this.parseAmount(paymentData.amount);
         }
 
         // Create checkout session
@@ -75,7 +80,7 @@
         if (paymentData.redirect === 'true') {
           window.location.href = session.paymentUrl;
         } else {
-          this.openPaymentModal(session);
+          this.openPaymentModal(session, paymentData);
         }
 
       } catch (error) {
@@ -93,24 +98,32 @@
         apiKey: element.getAttribute('data-key'),
         apiBase: element.getAttribute('data-api-base') || this.config.apiUrl,
         redirect: element.getAttribute('data-redirect') || 'false',
-        callback: element.getAttribute('data-callback')
+        callbackUrl: element.getAttribute('data-callback-url') || null
       };
     }
 
     async createCheckoutSession(data) {
       const apiUrl = data.apiBase || this.config.apiUrl;
+      
+      const sessionData = {
+        amount: data.amount,
+        description: data.description,
+        itemName: data.itemName,
+        customerEmail: data.customerEmail
+      };
+      
+      // Add callback URL if provided
+      if (data.callbackUrl) {
+        sessionData.callbackUrl = data.callbackUrl;
+      }
+      
       const response = await fetch(`${apiUrl}/v1/checkout/sessions`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${data.apiKey}`
         },
-        body: JSON.stringify({
-          amount: data.amount,
-          description: data.description,
-          itemName: data.itemName,
-          customerEmail: data.customerEmail
-        })
+        body: JSON.stringify(sessionData)
       });
 
       if (!response.ok) {
@@ -121,7 +134,7 @@
       return await response.json();
     }
 
-    openPaymentModal(session) {
+    openPaymentModal(session, data) {
       // Create modal overlay
       const overlay = document.createElement('div');
       overlay.className = 'onionpay-overlay';
@@ -153,14 +166,14 @@
 
       document.body.appendChild(overlay);
 
-      // Start polling for payment status
-      this.pollPaymentStatus(session.orderId, overlay);
+      // Start polling for payment status  
+      this.pollPaymentStatus(session.orderId, overlay, data ? data.apiBase : this.config.apiUrl);
     }
 
-    async pollPaymentStatus(orderId, modal) {
+    async pollPaymentStatus(orderId, modal, apiBase) {
       const pollInterval = setInterval(async () => {
         try {
-          const response = await fetch(`${this.config.apiUrl}/v1/checkout/status/${orderId}`);
+          const response = await fetch(`${apiBase || this.config.apiUrl}/v1/checkout/status/${orderId}`);
           const status = await response.json();
 
           if (status.status === 'approved') {
@@ -307,6 +320,19 @@
 
       // Also trigger window event
       window.dispatchEvent(new CustomEvent(`onionpay:${event}`, { detail: data }));
+    }
+
+    parseAmount(amountString) {
+      if (typeof amountString === 'number') return amountString;
+      if (!amountString) return null;
+      
+      // Remove currency symbols, spaces, commas
+      const cleaned = amountString.toString()
+        .replace(/[₹$€£¥,\s]/g, '')
+        .replace(/[^\d.-]/g, '');
+      
+      const amount = parseFloat(cleaned);
+      return isNaN(amount) ? null : amount;
     }
 
     handleError(error) {
