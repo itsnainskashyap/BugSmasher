@@ -26,14 +26,14 @@ export const InstallPrompt = () => {
         if (!dismissed && window.location.pathname !== '/') { // User is logged in
           setTimeout(() => {
             setHasShownPrompt(true);
-            showInstallDialog(); // Actually show the dialog
+            setShowInstallPrompt(true); // Actually show the dialog
           }, 2000);
         }
       }
     };
 
     checkAndShowPrompt();
-  }, [isInstallable, isInstalled, hasShownPrompt, showInstallDialog]);
+  }, [isInstallable, isInstalled, hasShownPrompt]);
 
   const handleInstall = async () => {
     await installApp();
